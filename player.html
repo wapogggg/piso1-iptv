@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>IPTV Player</title>
+<style>
+  body{margin:0;background:#000;color:#fff;font-family:Inter,Arial}
+  .top{position:fixed;left:8px;top:8px;z-index:20;display:flex;gap:8px}
+  .back{background:#fff;color:#000;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:700}
+  .openyt{background:rgba(255,255,255,0.08);color:#9fe8ff;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);text-decoration:none}
+  iframe{width:100%;height:100vh;border:0;background:#000}
+  .hint{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:rgba(255,255,255,0.03);padding:8px 12px;border-radius:10px;color:#bfeffb;font-size:13px}
+</style>
+</head>
+<body>
+<div class="top">
+  <a class="back" href="index.html">← Back</a>
+  <a id="openYT" class="openyt" target="_blank" rel="noopener">Open on YouTube</a>
+</div>
+
+<iframe id="player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+<div id="hint" class="hint">If video doesn't play, click "Open on YouTube"</div>
+
+<script>
+  // get src param (encoded)
+  const params = new URLSearchParams(window.location.search);
+  const encoded = params.get('src') || '';
+  const src = decodeURIComponent(encoded);
+  const player = document.getElementById('player');
+  const openBtn = document.getElementById('openYT');
+
+  if(src && src.startsWith('http')){
+    player.src = src;
+    // set open-on-youtube fallback: if it's a youtube embed, open the watch page
+    try{
+      const u = new URL(src);
+      if(u.hostname.includes('youtube')){
+        // if embed/live_stream?channel=... convert to watch? (open results if cannot)
+        if(u.pathname.includes('/embed/')){
+          // embed contains video id or live_stream endpoint
+          if(u.searchParams.has('channel')){
+            openBtn.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(u.searchParams.get('channel') + ' live');
+          } else {
+            // direct embed video id
+            const vid = u.pathname.split('/embed/')[1];
+            openBtn.href = 'https://www.youtube.com/watch?v=' + vid;
+          }
+        } else {
+          openBtn.href = src;
+        }
+      } else {
+        // non-youtube direct link: open direct
+        openBtn.href = src;
+      }
+    }catch(e){
+      openBtn.href = src;
+    }
+  } else {
+    // nothing to load: show helpful screen and link to index
+    player.src = '';
+    document.getElementById('hint').textContent = 'No valid stream. Returning to channel list...';
+    setTimeout(()=> { window.location.href = 'index.html'; }, 1600);
+  }
+
+  // attempt autoplay (browsers may block)
+  player.addEventListener('load', ()=> {
+    // no-op; if fails user can click open on YouTube
+  });
+
+</script>
+</body>
+</html>
